@@ -1,0 +1,47 @@
+disable items: [ENCHANTMENT_TABLE]
+tool items: [ANVIL]
+costs:
+  tier 1:
+    material: GOLD_INGOT
+    amount: 2
+  tier 2:
+    material: GOLD_INGOT
+    amount: 8
+  tier 3:
+    material: GOLDEN_APPLE
+    amount: 2
+  tier 4:
+    material: GOLDEN_APPLE
+    amount: 8
+enchantments:
+  DAMAGE_ALL:
+    1: tier 1
+    2: tier 2
+    3: tier 3
+    4: tier 4
+  ARROW_DAMAGE:
+    1: tier 1
+    2: tier 2
+    3: tier 3
+    4: tier 4
+  PROTECTION_ENVIRONMENTAL:
+    1: tier 1
+    2: tier 2
+    3: tier 3
+    4: tier 4
+  PROTECTION_FALL:
+    1: tier 1
+    2: tier 1
+    3: tier 2
+  PROTECTION_PROJECTILE:
+    1: tier 1
+    2: tier 2
+    3: tier 3
+    4: tier 4
+  ARROW_FIRE:
+    1: tier 4
+  FIRE_ASPECT:
+    1: tier 4
+  ARROW_INFINITE:
+    1: tier 4
+

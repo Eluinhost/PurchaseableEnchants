@@ -1,0 +1,13 @@
+name: PurchaseableEnchants
+main: gg.uhc.purchaseableenchants.Entry
+version: 1.0-SNAPSHOT
+author: ghowden/Eluinhost
+database: false
+depend: []
+commands:
+  enchcraft:
+    description: Open enchant inventory
+    usage: /enchcraft
+permissions:
+  uhc.deterministiccrafting.command:
+    default: false
