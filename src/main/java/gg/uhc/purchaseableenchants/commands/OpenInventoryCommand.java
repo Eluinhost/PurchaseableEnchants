@@ -13,6 +13,11 @@ public class OpenInventoryCommand implements CommandExecutor {
 
     protected final ItemUpgradesManager manager;
 
+    /**
+     * Debug command that directy opens the tool for the player that ran it
+     *
+     * @param manager the upgrade manager
+     */
     public OpenInventoryCommand(ItemUpgradesManager manager) {
         this.manager = manager;
     }

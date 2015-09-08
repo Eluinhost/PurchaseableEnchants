@@ -12,6 +12,12 @@ public class EnchantmentType {
     protected final Enchantment enchantment;
     protected final ItemStack[] costs;
 
+    /**
+     * Create a new enchantment type
+     *
+     * @param enchantment the enchantment to apply
+     * @param costs the costs per tier, null = not available
+     */
     public EnchantmentType(Enchantment enchantment, ItemStack... costs) {
         Preconditions.checkNotNull(enchantment);
 
@@ -19,6 +25,13 @@ public class EnchantmentType {
         this.costs = costs;
     }
 
+    /**
+     * Checks ths cost to upgrade the given stack.
+     * If return value is not present, we cannot upgrade the given stack with this enchantment.
+     *
+     * @param stack the stack to check
+     * @return the cost if possible
+     */
     public Optional<ItemStack> costToUpgrade(ItemStack stack) {
         int currentLevel = stack.getEnchantmentLevel(enchantment);
 
@@ -28,18 +41,36 @@ public class EnchantmentType {
         return Optional.of(costs[currentLevel]);
     }
 
+    /**
+     * Check if the level given has an associated cost
+     *
+     * @param level the level to check
+     * @return true if there is a cost, false otherwise
+     */
     public boolean canEnchantAtLevel(int level) {
         int index = level - 1;
 
         return index >= 0 && index < costs.length && costs[index] != null;
     }
 
+    /**
+     * Increments this enchant on the given stack.
+     * If the item doesn't have this enchant it will be set to level 1
+     *
+     * @param stack the stack to increment
+     */
     public void unsafeEnchantIncrement(ItemStack stack) {
         Preconditions.checkNotNull(stack);
 
         stack.addUnsafeEnchantment(enchantment, stack.getEnchantmentLevel(enchantment) + 1);
     }
 
+    /**
+     * Checks if the item can have this enchant and whether it is upgradable via this object
+     *
+     * @param stack the stack to check
+     * @return true if it is enchantable and upgradable
+     */
     public boolean canEnchant(ItemStack stack) {
         if (stack == null) return false;
 

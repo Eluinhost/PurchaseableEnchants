@@ -8,7 +8,6 @@ import gg.uhc.purchaseableenchants.configuration.parsers.EnchantmentParser;
 import gg.uhc.purchaseableenchants.configuration.parsers.MaterialParser;
 import gg.uhc.purchaseableenchants.listeners.CraftingListener;
 import gg.uhc.purchaseableenchants.listeners.InteractListener;
-import gg.uhc.purchaseableenchants.offers.EnchantmentOffers;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -29,6 +28,7 @@ public class Entry extends JavaPlugin {
     public void onEnable() {
         // save the default if none exists already
         if(!copyDefaultConfig()) {
+            // something went wrong with config writing
             setEnabled(false);
             return;
         }
@@ -37,37 +37,46 @@ public class Entry extends JavaPlugin {
         configuration.options().copyDefaults(true);
         saveConfig();
 
+        // readers for materials
         MaterialParser materialParser = new MaterialParser();
         MaterialReader materialReader = new MaterialReader(materialParser);
         MaterialListReader materialListReader = new MaterialListReader(materialParser);
+
+        // integer reader
         PositiveIntegerReader positiveIntegerReader = new PositiveIntegerReader(false);
+
+        // item stacks
         ItemStackReader itemStackReader = new ItemStackReader(materialReader, positiveIntegerReader);
         ItemStackMapReader costMapRader = new ItemStackMapReader(itemStackReader);
+
         try {
             // read costs to use in tier cost reader
             Map<String, ItemStack> costsMap = costMapRader.readFromSection(configuration, "costs");
 
+            // cost tiers
             EnchantmentTierCostReader tierCostReader = new EnchantmentTierCostReader(costsMap);
-            EnchantmentTypeReader typeReader = new EnchantmentTypeReader(new EnchantmentParser(), tierCostReader);
-            EnchantmentOffersReader offersReader = new EnchantmentOffersReader(typeReader);
 
-            // offers + manager
-            EnchantmentOffers offers = offersReader.readFromSection(configuration, "enchantments");
-            ItemUpgradesManager itemUpgradesManager = new ItemUpgradesManager(offers);
+            // enchantment types
+            EnchantmentTypeReader typeReader = new EnchantmentTypeReader(new EnchantmentParser(), tierCostReader);
+            EnchantmentTypeListReader offersReader = new EnchantmentTypeListReader(typeReader);
 
             // trigger/disable items
             List<Material> triggerItems = materialListReader.readFromSection(configuration, "tool items");
             List<Material> disableItems = materialListReader.readFromSection(configuration, "disable items");
 
+            // create the manager
+            ItemUpgradesManager itemUpgradesManager = new ItemUpgradesManager(offersReader.readFromSection(configuration, "enchantments"));
+
             // register events
             PluginManager manager = Bukkit.getPluginManager();
+            manager.registerEvents(itemUpgradesManager, this);
             manager.registerEvents(new CraftingListener(disableItems), this);
             manager.registerEvents(new InteractListener(itemUpgradesManager, triggerItems), this);
-            manager.registerEvents(itemUpgradesManager, this);
 
             // debug command
             getCommand("enchcraft").setExecutor(new OpenInventoryCommand(itemUpgradesManager));
         } catch (InvalidConfigurationException e) {
+            // invalid configuration file, print stack and disable plugin
             e.printStackTrace();
             setEnabled(false);
         }
@@ -79,23 +88,29 @@ public class Entry extends JavaPlugin {
     protected boolean copyDefaultConfig() {
         File dataFolder = getDataFolder();
 
+        // make data folder if it isn't there
         if (!dataFolder.exists() && !dataFolder.mkdir()) {
+            // data folder creation failed
             return false;
         }
 
         File configFile = new File(getDataFolder(), "config.yml");
 
+        // config file already exists
         if (configFile.exists()) return true;
 
         // write the defaults
         URL defaultConfig = Resources.getResource(this.getClass(), "/default.yml");
         try {
+            // write /default.yml to the config.yml file
             Files.write(Resources.toByteArray(defaultConfig), configFile);
         } catch (IOException e) {
             e.printStackTrace();
+            // something failed during writing
             return false;
         }
 
+        // config wrote successfully
         return true;
     }
 }

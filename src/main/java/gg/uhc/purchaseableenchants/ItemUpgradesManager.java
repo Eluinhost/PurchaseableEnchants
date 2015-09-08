@@ -1,10 +1,12 @@
 package gg.uhc.purchaseableenchants;
 
-import com.google.common.collect.*;
-import gg.uhc.purchaseableenchants.offers.EnchantmentOffers;
+import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import gg.uhc.purchaseableenchants.enchants.EnchantmentType;
 import gg.uhc.purchaseableenchants.offers.Offer;
-import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
@@ -21,26 +23,44 @@ import java.util.*;
 
 public class ItemUpgradesManager implements Listener {
 
+    // how many columns in an inventory
     protected static final int COLUMNS = 9;
+
+    // how many offers fit in an inventory
+    // max inventory size is 9*6 and an offer is 3 tall so we can fit 18
     protected static final int MAX_OFFERS_PER_INVENTORY = 18;
+
+    // item names
     protected static final String PURCHASE = ChatColor.GREEN + "Click to purchase upgrade";
     protected static final String CANNOT_AFFORD = ChatColor.RED + "You cannot afford this upgrade";
+
+    // inventory name used for identification
     protected static final String INV_NAME = ChatColor.RED + "Enchantment Tool";
 
+    // map of player -> active offers (indexed based on inventory click index)
     protected final Map<UUID, Offer[]> playerPurchaseIndexes = Maps.newHashMap();
-    protected final EnchantmentOffers enchantmentOffers;
+
+    // list of enchantment types used to generate offers
+    protected final List<EnchantmentType> enchantmentTypes;
 
     protected final ItemStack emptySlot;
     protected final ItemStack noItems;
 
-    public ItemUpgradesManager(EnchantmentOffers enchantmentOffers) {
-        this.enchantmentOffers = enchantmentOffers;
+    public ItemUpgradesManager(List<EnchantmentType> enchantmentTypes) {
+        this.enchantmentTypes = enchantmentTypes;
         emptySlot = null;
 
         noItems = new ItemStack(Material.BARRIER, 1);
         setItemMeta(noItems, ChatColor.RED + "No Items", "You have no items in your", "inventory that can be enchanted");
     }
 
+    /**
+     * Set the name and lore on the given stack
+     *
+     * @param stack the stack to set
+     * @param name the name of the item
+     * @param lore optional lore lines
+     */
     protected void setItemMeta(ItemStack stack, String name, String... lore) {
         ItemMeta current = stack.getItemMeta();
         current.setDisplayName(name);
@@ -52,9 +72,45 @@ public class ItemUpgradesManager implements Listener {
         stack.setItemMeta(current);
     }
 
+    /**
+     * Converts the itemstack array to a List of offers for the items
+     *
+     * @param inventory the inventory to get offers for
+     * @return list of offers
+     */
+    public List<Offer> getOffersForInventory(Inventory inventory) {
+        ItemStack[] items = inventory.getContents();
+
+        List<Offer> offers = Lists.newArrayList();
+
+        for (int i = 0; i < items.length; i++) {
+            ItemStack current = items[i];
+
+            for (EnchantmentType type : enchantmentTypes) {
+                if (!type.canEnchant(current)) continue;
+
+                Optional<ItemStack> cost = type.costToUpgrade(current);
+
+                if (!cost.isPresent()) continue;
+
+                ItemStack offer = current.clone();
+                type.unsafeEnchantIncrement(offer);
+
+                offers.add(new Offer(offer, current, cost.get(), i));
+            }
+        }
+
+        return offers;
+    }
+
+    /**
+     * Shows a list of upgrades to the player to choose from
+     *
+     * @param player the player to run for
+     */
     public void showUpgrades(Player player) {
         // get all of the offers for their entire inventory
-        List<Offer> offers = enchantmentOffers.availableOffersForStacks(player.getInventory().getContents());
+        List<Offer> offers = getOffersForInventory(player.getInventory());
 
         // send empty inventory if there are no offers
         if (offers.size() == 0) {
@@ -148,31 +204,43 @@ public class ItemUpgradesManager implements Listener {
         return COLUMNS * ((number + COLUMNS - 1) / COLUMNS);
     }
 
-    protected void closeOpen(Player player) {
+    /**
+     * Closes the player's inventory and removes any triggers
+     *
+     * @param player the player to run for
+     */
+    public void closeOpen(Player player) {
         playerPurchaseIndexes.remove(player.getUniqueId());
         player.closeInventory();
     }
 
     @EventHandler
     public void on(PlayerQuitEvent event) {
+        // remove triggers
         playerPurchaseIndexes.remove(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
     public void on(InventoryCloseEvent event) {
+        // remove triggers
         playerPurchaseIndexes.remove(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
     public void on(InventoryClickEvent event) {
+        // only run for our inventory
         if (!event.getInventory().getTitle().equals(INV_NAME)) return;
+
+        // cancel all clicks
         event.setCancelled(true);
 
+        // only run for players
         HumanEntity entity = event.getWhoClicked();
         if (!(entity instanceof Player)) return;
 
         Player player = (Player) entity;
 
+        // grab player's triggers
         Offer[] purchaseTriggers = playerPurchaseIndexes.get(player.getUniqueId());
 
         // none saved, shouldn't happen
@@ -189,7 +257,7 @@ public class ItemUpgradesManager implements Listener {
         // grab trigger
         Offer chosen = purchaseTriggers[indexClicked];
 
-        // click on a non-trigger slot
+        // click on a non-triggered slot
         if (chosen == null) return;
 
         ItemStack cost = chosen.getCost();
