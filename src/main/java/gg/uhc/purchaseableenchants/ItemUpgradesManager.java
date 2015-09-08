@@ -269,6 +269,13 @@ public class ItemUpgradesManager implements Listener {
             return;
         }
 
+        // check original item hasn't changed, shouldn't happen but cancel anyway
+        ItemStack original = player.getInventory().getItem(chosen.getOriginalItemIndex());
+        if (!original.equals(chosen.getOriginal())) {
+            closeOpen(player);
+            return;
+        }
+
         // remove cost
         player.getInventory().removeItem(cost);
         // upgrade item
