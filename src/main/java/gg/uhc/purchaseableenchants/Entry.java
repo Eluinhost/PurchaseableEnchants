@@ -8,6 +8,7 @@ import gg.uhc.purchaseableenchants.configuration.parsers.EnchantmentParser;
 import gg.uhc.purchaseableenchants.configuration.parsers.MaterialParser;
 import gg.uhc.purchaseableenchants.listeners.CraftingListener;
 import gg.uhc.purchaseableenchants.listeners.InteractListener;
+import gg.uhc.purchaseableenchants.listeners.InventoryOpenListener;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -45,6 +46,9 @@ public class Entry extends JavaPlugin {
         // integer reader
         PositiveIntegerReader positiveIntegerReader = new PositiveIntegerReader(false);
 
+        // boolean reader
+        BooleanReader booleanReader = new BooleanReader();
+
         // item stacks
         ItemStackReader itemStackReader = new ItemStackReader(materialReader, positiveIntegerReader);
         ItemStackMapReader costMapRader = new ItemStackMapReader(itemStackReader);
@@ -64,14 +68,19 @@ public class Entry extends JavaPlugin {
             List<Material> triggerItems = materialListReader.readFromSection(configuration, "tool items");
             List<Material> disableItems = materialListReader.readFromSection(configuration, "disable items");
 
+            boolean removeEnchantsOnRepair = booleanReader.readFromSection(configuration, "remove enchants on repair");
+            boolean disableAnvil = booleanReader.readFromSection(configuration, "disable anvil use");
+            boolean disableTable = booleanReader.readFromSection(configuration, "disable enchanting table use");
+
             // create the manager
             ItemUpgradesManager itemUpgradesManager = new ItemUpgradesManager(offersReader.readFromSection(configuration, "enchantments"));
 
             // register events
             PluginManager manager = Bukkit.getPluginManager();
             manager.registerEvents(itemUpgradesManager, this);
-            manager.registerEvents(new CraftingListener(disableItems), this);
+            manager.registerEvents(new CraftingListener(disableItems, removeEnchantsOnRepair), this);
             manager.registerEvents(new InteractListener(itemUpgradesManager, triggerItems), this);
+            manager.registerEvents(new InventoryOpenListener(disableAnvil, disableTable), this);
 
             // debug command
             getCommand("enchcraft").setExecutor(new OpenInventoryCommand(itemUpgradesManager));

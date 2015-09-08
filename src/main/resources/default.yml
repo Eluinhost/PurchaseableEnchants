@@ -1,3 +1,6 @@
+remove enchants on repair: true
+disable anvil use: true
+disable enchanting table use: true
 disable items: [ENCHANTMENT_TABLE]
 tool items: [ANVIL]
 costs:

@@ -14,6 +14,9 @@ You can also configure which item when clicked opens the enchantment tool
 Example config:
 
 ```yaml
+remove enchants on repair: true
+disable anvil use: true
+disable enchanting table use: true
 disable items: [ENCHANTMENT_TABLE]
 tool items: [ANVIL]
 costs:
@@ -61,6 +64,19 @@ enchantments:
   ARROW_INFINITE:
     1: tier 4
 ```
+
+### remove enchants on repair
+
+If true any items repaired at a crafting table/inventory will have their enchants removed. THIS DOES NOT STOP COMBINING
+IN AN ANVIL FOR HIGHER LEVELS
+
+### disable anvil use
+
+Disables placed anvils in the world opening
+
+### disable enchanting table use
+
+Disabeles placed tabeles in the world opening
 
 ### disable items
 

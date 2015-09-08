@@ -2,3 +2,6 @@ costs:
 enchantments:
 disable items:
 tool items:
+remove enchants on repair: true
+disable anvil use: true
+disable enchanting table use: true
